@@ -1,0 +1,19 @@
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+COPY RaceEngineeringApi.csproj .
+RUN dotnet restore
+
+COPY . .
+RUN dotnet publish -c Release -o /app
+
+# Runtime stage — smaller image, no SDK needed to just run the app
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app
+COPY --from=build /app .
+
+# Render sets $PORT at runtime; Program.cs reads it and binds to 0.0.0.0.
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+ENTRYPOINT ["dotnet", "RaceEngineeringApi.dll"]
