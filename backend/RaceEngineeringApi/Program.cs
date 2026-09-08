@@ -3,6 +3,7 @@ using RaceEngineeringApi.Data;
 using RaceEngineeringApi.Endpoints;
 using RaceEngineeringApi.Middleware;
 using RaceEngineeringApi.Services;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +20,26 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<CsvImportService>();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Name = "X-Api-Key",
+        Type = SecuritySchemeType.ApiKey,
+        Description = "Cola aqui a chave da equipa (sem a palavra 'Bearer', só a chave).",
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "ApiKey" }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL");
 builder.Services.AddCors(options =>
