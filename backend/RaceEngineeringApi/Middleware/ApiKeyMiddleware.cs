@@ -20,7 +20,7 @@ public class ApiKeyMiddleware
         if (string.IsNullOrWhiteSpace(_configuredKey))
         {
             _logger.LogWarning(
-                "No ApiKey configured — /api/* endpoints are UNPROTECTED. " +
+                "No ApiKey configured - /api/* endpoints are UNPROTECTED. " +
                 "Set the 'ApiKey' setting or RACE_ENGINEERING_API_KEY environment variable before running this for a team.");
         }
     }

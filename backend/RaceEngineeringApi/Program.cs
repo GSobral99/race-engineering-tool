@@ -27,7 +27,7 @@ builder.Services.AddSwaggerGen(options =>
         In = ParameterLocation.Header,
         Name = "X-Api-Key",
         Type = SecuritySchemeType.ApiKey,
-        Description = "Cola aqui a chave da equipa (sem a palavra 'Bearer', só a chave).",
+        Description = "",
     });
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {

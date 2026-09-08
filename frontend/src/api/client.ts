@@ -1,4 +1,9 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5080";
+const API_KEY = import.meta.env.VITE_API_KEY ?? "";
+
+function authHeaders(): HeadersInit {
+  return API_KEY ? { "X-Api-Key": API_KEY } : {};
+}
 
 export interface SessionSummary {
   id: number;
@@ -28,7 +33,10 @@ export interface SessionDetail extends SessionSummary {
 }
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`);
+  const res = await fetch(`${API_URL}${path}`, { headers: authHeaders() });
+  if (res.status === 401) {
+    throw new Error("Unauthorized: missing or invalid API key (set VITE_API_KEY in frontend/.env).");
+  }
   if (!res.ok) {
     throw new Error(`Request to ${path} failed: ${res.status} ${res.statusText}`);
   }
@@ -47,8 +55,12 @@ export const api = {
 
     const res = await fetch(`${API_URL}/api/sessions/import`, {
       method: "POST",
+      headers: authHeaders(),
       body: form,
     });
+    if (res.status === 401) {
+      throw new Error("Unauthorized: missing or invalid API key (set VITE_API_KEY in frontend/.env).");
+    }
     if (!res.ok) {
       throw new Error(`Import failed: ${res.status} ${res.statusText}`);
     }
