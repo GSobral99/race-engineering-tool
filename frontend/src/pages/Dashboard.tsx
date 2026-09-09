@@ -1,104 +1,66 @@
-import { useState } from "react";
-import type { FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api/client";
+import type { SessionDetail, SessionSummary } from "../api/client";
+import { SessionPicker } from "../components/SessionPicker";
+import { StintChart } from "../components/StintChart";
+import { LapTable } from "../components/LapTable";
+import { ImportForm } from "../components/ImportForm";
 
-interface Props {
-  onImported: (newSessionId: number) => void;
-}
-
-export function ImportForm({ onImported }: Props) {
-  const [file, setFile] = useState<File | null>(null);
-  const [sessionName, setSessionName] = useState("");
-  const [source, setSource] = useState("");
-  const [busy, setBusy] = useState(false);
+export function Dashboard() {
+  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [detail, setDetail] = useState<SessionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!file) {
-      setError("Escolhe um ficheiro CSV primeiro.");
-      return;
-    }
+  function refreshSessions() {
+    api
+      .listSessions()
+      .then(setSessions)
+      .catch((err) => setError(err.message));
+  }
 
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await api.importCsv(file, sessionName, source || "manual-upload");
-      setFile(null);
-      setSessionName("");
-      setSource("");
-      onImported(result.id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao importar o ficheiro.");
-    } finally {
-      setBusy(false);
-    }
+  useEffect(() => {
+    refreshSessions();
+  }, []);
+
+  useEffect(() => {
+    if (selectedId == null) return;
+    api
+      .getSession(selectedId)
+      .then(setDetail)
+      .catch((err) => setError(err.message));
+  }, [selectedId]);
+
+  function handleImported(newSessionId: number) {
+    refreshSessions();
+    setSelectedId(newSessionId);
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        border: "1px solid #ddd",
-        borderRadius: 8,
-        padding: 16,
-        marginTop: 16,
-        marginBottom: 24,
-        background: "#fafafa",
-      }}
-    >
-      <h3 style={{ margin: "0 0 12px", fontSize: 16, color: "#1F3A5F" }}>Importar nova sessão</h3>
+    <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px", fontFamily: "sans-serif" }}>
+      <h1 style={{ color: "#1F3A5F" }}>Race Engineering Debrief Tool</h1>
 
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
-        <label style={{ display: "flex", flexDirection: "column", fontSize: 13 }}>
-          Ficheiro CSV
-          <input
-            type="file"
-            accept=".csv"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            style={{ marginTop: 4 }}
-          />
-        </label>
+      {error && <p style={{ color: "#C0392B" }}>Error: {error}</p>}
 
-        <label style={{ display: "flex", flexDirection: "column", fontSize: 13 }}>
-          Nome da sessão (opcional)
-          <input
-            type="text"
-            value={sessionName}
-            onChange={(e) => setSessionName(e.target.value)}
-            placeholder="ex: Silverstone Race"
-            style={{ marginTop: 4, padding: 6 }}
-          />
-        </label>
+      <ImportForm onImported={handleImported} />
 
-        <label style={{ display: "flex", flexDirection: "column", fontSize: 13 }}>
-          Origem (opcional)
-          <input
-            type="text"
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            placeholder="ex: ac-lap-coach"
-            style={{ marginTop: 4, padding: 6 }}
-          />
-        </label>
+      <SessionPicker sessions={sessions} selectedId={selectedId} onSelect={setSelectedId} />
 
-        <button
-          type="submit"
-          disabled={busy}
-          style={{
-            padding: "8px 16px",
-            background: "#1F3A5F",
-            color: "white",
-            border: "none",
-            borderRadius: 6,
-            cursor: busy ? "not-allowed" : "pointer",
-          }}
-        >
-          {busy ? "A importar..." : "Importar"}
-        </button>
-      </div>
+      {detail && (
+        <div style={{ marginTop: 24 }}>
+          <h2>{detail.name}</h2>
+          <p style={{ color: "#666" }}>
+            Source: {detail.source} · Imported {new Date(detail.importedAt).toLocaleString()}
+          </p>
 
-      {error && <p style={{ color: "#C0392B", marginTop: 8, fontSize: 13 }}>{error}</p>}
-    </form>
+          {detail.stints.map((stint) => (
+            <section key={stint.id} style={{ marginBottom: 32 }}>
+              <StintChart stint={stint} />
+              <LapTable stint={stint} />
+            </section>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
