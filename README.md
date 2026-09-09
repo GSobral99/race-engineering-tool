@@ -8,11 +8,10 @@ available.
 **Live demo:** [VERCEL](https://race-engineering-tool.vercel.app) (API docs at
 `https://race-engineering-tool.onrender.com/swagger/`)
 
-> The demo runs on free-tier hosting: the backend spins down after 15
-> minutes of inactivity, so the first request after a while can take
-> 30-60s to wake it up. The demo database also resets periodically since
-> the free tier has no persistent disk - import the sample CSV below if
-> the session list looks empty.
+> The backend runs on Render's free tier, so it spins down after 15
+> minutes of inactivity - the first request after a while can take
+> 30-60s to wake it up. The database is a free Neon Postgres instance,
+> so data persists normally across restarts and deploys (no reset).
 
 This is deliberately built as a "tool for engineers", not a public app: the
 target user is someone who wants to open a session after a race and quickly
@@ -29,7 +28,8 @@ demo with its own fake dataset.
 
 ## Stack
 
-- **Backend:** C# / ASP.NET Core 8 Minimal API, Entity Framework Core, SQLite
+- **Backend:** C# / ASP.NET Core 8 Minimal API, Entity Framework Core
+- **Database:** PostgreSQL (Neon, free tier) in production; SQLite for local dev
 - **Frontend:** TypeScript, React, Vite, Recharts
 - **Deploy:** Backend on Render (Docker), frontend on Vercel
 
@@ -43,13 +43,16 @@ race-engineering-tool/
 │       ├── Data/              # EF Core DbContext
 │       ├── Services/          # CSV import logic (reads ac-lap-coach / pit-stop-predictor exports)
 │       ├── Endpoints/         # Minimal API route groups (sessions, laps, import)
-│       └── Program.cs         # App wiring, DI, CORS, endpoint mapping
-└── frontend/
-    └── src/
-        ├── api/                # Typed fetch client for the backend API
-        ├── components/         # StintChart, LapTable, SessionPicker
-        ├── pages/              # Dashboard, SessionDetail
-        └── App.tsx
+│       ├── Middleware/        # API key auth
+│       └── Program.cs         # App wiring, DI, CORS, DB provider selection, endpoint mapping
+├── frontend/
+│   └── src/
+│       ├── api/                # Typed fetch client for the backend API
+│       ├── components/         # StintChart, LapTable, SessionPicker, ImportForm
+│       ├── pages/              # Dashboard
+│       └── App.tsx
+└── scripts/
+    └── import_from_fastf1.py   # Pulls a real F1 session from FastF1 and pushes it to the API
 ```
 
 ## Data model
@@ -84,13 +87,34 @@ The frontend expects the API at `http://localhost:5080` - change
 
 ### Importing data
 
-The API requires an `X-Api-Key` header on every `/api/*` request (see
-[Auth](#auth) below).
+You can import a session two ways:
+
+1. **Through the dashboard** - the "Upload new session" form on the main page accepts a CSV directly, no terminal needed.
+2. **Via the API directly** (requires the `X-Api-Key` header, see [Auth](#auth)):
 
 ```bash
 curl -F "file=@../ac-lap-coach/laps.csv" -F "sessionName=Silverstone" -F "source=ac-lap-coach" \
   -H "X-Api-Key: your-team-key" \
   http://localhost:5080/api/sessions/import
+```
+
+### Importing a real F1 session (FastF1)
+
+`scripts/import_from_fastf1.py` pulls a real session straight from FastF1's
+cached timing data and pushes it to the API - no manual CSV step. This is a
+one-off script that can run locally, not a feature
+exposed in the web UI (see [Why there's no "Import from FastF1" button](#why-theres-no-import-from-fastf1-button)).
+
+```bash
+cd scripts
+pip install -r requirements.txt
+
+# See what events exist for a year
+python import_from_fastf1.py --year 2024 --list-events
+
+# Import a real session
+python import_from_fastf1.py --year 2024 --event Silverstone --session R \
+  --api-url https://your-api.onrender.com --api-key your-team-key
 ```
 
 ## Auth
@@ -102,16 +126,40 @@ configured, auth is skipped (useful for local dev). This is a
 deliberately simple scheme for a small internal team, not per-user auth -
 see the code comments in `Middleware/ApiKeyMiddleware.cs` for the reasoning.
 
+## Database
+
+Local development uses SQLite by default (zero setup). Production uses a
+free [Neon](https://neon.tech) Postgres instance - `Program.cs` picks
+whichever one is available: if a `DATABASE_URL` environment variable is
+set, it connects to Postgres; otherwise it falls back to the local SQLite
+file. Both providers use `EnsureCreated()` rather than EF Core migrations,
+which is fine for a project this size but would need to change if the
+schema needs to evolve without losing existing data.
+
+## Why there's no "Import from FastF1" button
+
+FastF1 is Python-only; the backend is C#. Wiring a button in the web UI
+would mean either shelling out to a Python subprocess from the .NET
+backend (fragile, and means bundling Python into the Docker image) or
+standing up a second microservice just for this. On top of that, a
+session's first FastF1 fetch can take tens of seconds - long enough to
+risk a timeout on Render's free tier, and the free tier's cache doesn't
+persist across restarts anyway, so most imports would hit that slow path
+every time. So I decided to only let the script run locally to avoid all of this for
+very little cost.
+
 ## Roadmap
 
-- [x] Data model + EF Core SQLite persistence
+- [x] Data model + EF Core persistence
 - [x] CSV import endpoint
 - [x] Session / stint / lap read API
-- [x] React dashboard: session list, stint comparison chart, lap table
+- [x] React dashboard: session list, stint comparison chart, lap table, CSV upload form
 - [x] Auth (even a simple API key) so this could realistically run for a team
 - [x] Deploy to a free-tier cloud host (Render backend + Vercel frontend)
-- [ ] Import directly from the F1 strategy predictor's cached FastF1 data
-- [ ] Move off SQLite to a hosted Postgres for persistent demo data
+- [x] Import directly from FastF1's cached data (via a local script, see above)
+- [x] Move off SQLite to a hosted Postgres for persistent demo data (Neon)
+- [ ] Swap `EnsureCreated()` for real EF Core migrations, if the schema ever needs to change safely
+- [ ] Per-driver / per-team filtering on the dashboard for sessions with a full grid
 
 ## Note on tooling
 
