@@ -4,6 +4,7 @@ import type { SessionDetail, SessionSummary } from "../api/client";
 import { SessionPicker } from "../components/SessionPicker";
 import { StintChart } from "../components/StintChart";
 import { LapTable } from "../components/LapTable";
+import { ImportForm } from "../components/ImportForm";
 
 export function Dashboard() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
@@ -11,11 +12,15 @@ export function Dashboard() {
   const [detail, setDetail] = useState<SessionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function refreshSessions() {
     api
       .listSessions()
       .then(setSessions)
       .catch((err) => setError(err.message));
+  }
+
+  useEffect(() => {
+    refreshSessions();
   }, []);
 
   useEffect(() => {
@@ -26,11 +31,18 @@ export function Dashboard() {
       .catch((err) => setError(err.message));
   }, [selectedId]);
 
+  function handleImported(newSessionId: number) {
+    refreshSessions();
+    setSelectedId(newSessionId);
+  }
+
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px", fontFamily: "sans-serif" }}>
       <h1 style={{ color: "#1F3A5F" }}>Race Engineering Debrief Tool</h1>
 
       {error && <p style={{ color: "#C0392B" }}>Error: {error}</p>}
+
+      <ImportForm onImported={handleImported} />
 
       <SessionPicker sessions={sessions} selectedId={selectedId} onSelect={setSelectedId} />
 
