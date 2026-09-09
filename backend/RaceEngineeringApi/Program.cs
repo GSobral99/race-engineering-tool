@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using RaceEngineeringApi.Data;
 using RaceEngineeringApi.Endpoints;
 using RaceEngineeringApi.Middleware;
 using RaceEngineeringApi.Services;
-using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,9 +13,20 @@ if (!string.IsNullOrWhiteSpace(apiKeyFromEnv))
     builder.Configuration["ApiKey"] = apiKeyFromEnv;
 }
 
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("Default")
-        ?? "Data Source=race_engineering.db"));
+{
+    if (!string.IsNullOrWhiteSpace(databaseUrl))
+    {
+        options.UseNpgsql(BuildNpgsqlConnectionString(databaseUrl));
+    }
+    else
+    {
+        options.UseSqlite(builder.Configuration.GetConnectionString("Default")
+            ?? "Data Source=race_engineering.db");
+    }
+});
 
 builder.Services.AddScoped<CsvImportService>();
 
@@ -27,7 +38,7 @@ builder.Services.AddSwaggerGen(options =>
         In = ParameterLocation.Header,
         Name = "X-Api-Key",
         Type = SecuritySchemeType.ApiKey,
-        Description = "Cola aqui a chave da equipa (sem a palavra 'Bearer', só a chave).",
+        Description = "Paste the team key here (without the word 'Bearer', just the key).",
     });
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -69,7 +80,6 @@ app.UseSwaggerUI();
 
 app.UseCors();
 
-
 app.UseWhen(
     context => context.Request.Path.StartsWithSegments("/api"),
     branch => branch.UseApiKeyAuth());
@@ -85,3 +95,24 @@ if (!string.IsNullOrWhiteSpace(port))
 }
 
 app.Run();
+
+static string BuildNpgsqlConnectionString(string databaseUrl)
+{
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':', 2);
+    var username = Uri.UnescapeDataString(userInfo[0]);
+    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+    var database = uri.AbsolutePath.TrimStart('/');
+    var port = uri.Port == -1 ? 5432 : uri.Port;
+
+    return new Npgsql.NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = port,
+        Database = database,
+        Username = username,
+        Password = password,
+        SslMode = Npgsql.SslMode.Require,
+        TrustServerCertificate = true,
+    }.ConnectionString;
+}

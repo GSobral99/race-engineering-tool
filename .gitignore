@@ -48,3 +48,7 @@ pnpm-debug.log*
 # ===== OS junk =====
 .DS_Store
 Thumbs.db
+
+__pycache__/
+*.pyc
+scripts/fastf1_cache/

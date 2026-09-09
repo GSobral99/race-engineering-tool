@@ -8,7 +8,7 @@ interface Props {
 
 export function SessionPicker({ sessions, selectedId, onSelect }: Props) {
   if (sessions.length === 0) {
-    return <p>No sessions imported yet — use the API's /api/sessions/import endpoint to add one.</p>;
+    return <p>No sessions imported yet - use the API's /api/sessions/import endpoint to add one.</p>;
   }
 
   return (
