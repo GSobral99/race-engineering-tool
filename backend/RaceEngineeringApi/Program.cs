@@ -38,11 +38,7 @@ builder.Services.AddSwaggerGen(options =>
         In = ParameterLocation.Header,
         Name = "X-Api-Key",
         Type = SecuritySchemeType.ApiKey,
-<<<<<<< HEAD
         Description = "Paste the team key here (without the word 'Bearer', just the key).",
-=======
-        Description = "",
->>>>>>> a35e8752f1335d250c51ac5f35d2c63b7433954c
     });
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -120,3 +116,5 @@ static string BuildNpgsqlConnectionString(string databaseUrl)
         TrustServerCertificate = true,
     }.ConnectionString;
 }
+
+///
