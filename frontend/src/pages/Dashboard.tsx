@@ -5,12 +5,15 @@ import { SessionPicker } from "../components/SessionPicker";
 import { StintChart } from "../components/StintChart";
 import { LapTable } from "../components/LapTable";
 import { ImportForm } from "../components/ImportForm";
+import { DriverTeamFilter } from "../components/DriverTeamFilter";
 
 export function Dashboard() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [detail, setDetail] = useState<SessionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hiddenDrivers, setHiddenDrivers] = useState<string[]>([]);
+  const [hiddenTeams, setHiddenTeams] = useState<string[]>([]);
 
   function refreshSessions() {
     api
@@ -25,6 +28,8 @@ export function Dashboard() {
 
   useEffect(() => {
     if (selectedId == null) return;
+    setHiddenDrivers([]);
+    setHiddenTeams([]);
     api
       .getSession(selectedId)
       .then(setDetail)
@@ -35,6 +40,11 @@ export function Dashboard() {
     refreshSessions();
     setSelectedId(newSessionId);
   }
+
+  const visibleStints =
+    detail?.stints.filter(
+      (s) => !hiddenDrivers.includes(s.driver) && !(s.team && hiddenTeams.includes(s.team))
+    ) ?? [];
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px", fontFamily: "sans-serif" }}>
@@ -53,7 +63,19 @@ export function Dashboard() {
             Source: {detail.source} · Imported {new Date(detail.importedAt).toLocaleString()}
           </p>
 
-          {detail.stints.map((stint) => (
+          <DriverTeamFilter
+            stints={detail.stints}
+            hiddenDrivers={hiddenDrivers}
+            hiddenTeams={hiddenTeams}
+            onHiddenDriversChange={setHiddenDrivers}
+            onHiddenTeamsChange={setHiddenTeams}
+          />
+
+          {visibleStints.length === 0 && (
+            <p style={{ color: "#888" }}>No stints match the current filter.</p>
+          )}
+
+          {visibleStints.map((stint) => (
             <section key={stint.id} style={{ marginBottom: 32 }}>
               <StintChart stint={stint} />
               <LapTable stint={stint} />

@@ -25,6 +25,7 @@ export interface Stint {
   driver: string;
   stintNumber: number;
   compound: string;
+  team: string | null;
   laps: Lap[];
 }
 

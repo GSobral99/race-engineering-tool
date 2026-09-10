@@ -59,6 +59,7 @@ def build_dataframe(year: int, event: str, session_type: str) -> pd.DataFrame:
         # only gets populated for CSVs coming from the pit-stop-predictor
         # project. Left blank here on purpose.
         "PredictedLapTimeSeconds": "",
+        "Team": laps["Team"].fillna(""),
     })
 
     return rows.sort_values(["Driver", "LapNumber"]).reset_index(drop=True)

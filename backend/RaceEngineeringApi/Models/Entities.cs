@@ -1,5 +1,7 @@
-namespace RaceEngineeringApi.Models;
 using System.Text.Json.Serialization;
+
+namespace RaceEngineeringApi.Models;
+
 public class Session
 {
     public int Id { get; set; }
@@ -14,13 +16,14 @@ public class Stint
 {
     public int Id { get; set; }
     public int SessionId { get; set; }
-    
+
     [JsonIgnore]
     public Session? Session { get; set; }
 
     public required string Driver { get; set; }
     public int StintNumber { get; set; }
     public required string Compound { get; set; }       // SOFT / MEDIUM / HARD / etc.
+    public string? Team { get; set; }
 
     public List<Lap> Laps { get; set; } = new();
 }

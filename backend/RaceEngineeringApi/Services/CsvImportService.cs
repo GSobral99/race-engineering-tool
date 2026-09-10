@@ -9,7 +9,7 @@ namespace RaceEngineeringApi.Services;
 /// <summary>
 /// Expected CSV columns (matches the export format used by ac-lap-coach and
 /// the pit-stop-predictor project): Driver, StintNumber, Compound, LapNumber,
-/// LapTimeSeconds, TyreLife, PredictedLapTimeSeconds (optional).
+/// LapTimeSeconds, TyreLife, PredictedLapTimeSeconds (optional), Team (optional).
 /// </summary>
 public class LapRow
 {
@@ -22,6 +22,9 @@ public class LapRow
 
     [Optional]
     public double? PredictedLapTimeSeconds { get; set; }
+    
+    [Optional]
+    public string? Team { get; set; }
 }
 
 public class CsvImportService
@@ -53,6 +56,7 @@ public class CsvImportService
                 Driver = first.Driver,
                 StintNumber = first.StintNumber,
                 Compound = first.Compound,
+                Team = first.Team,
             };
 
             foreach (var row in group.OrderBy(r => r.LapNumber))
