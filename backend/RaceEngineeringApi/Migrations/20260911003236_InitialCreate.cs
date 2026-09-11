@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -15,11 +16,11 @@ namespace RaceEngineeringApi.Migrations
                 name: "Sessions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Source = table.Column<string>(type: "TEXT", nullable: false),
-                    ImportedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Source = table.Column<string>(type: "text", nullable: false),
+                    ImportedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -30,13 +31,13 @@ namespace RaceEngineeringApi.Migrations
                 name: "Stints",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    SessionId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Driver = table.Column<string>(type: "TEXT", nullable: false),
-                    StintNumber = table.Column<int>(type: "INTEGER", nullable: false),
-                    Compound = table.Column<string>(type: "TEXT", nullable: false),
-                    Team = table.Column<string>(type: "TEXT", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    SessionId = table.Column<int>(type: "integer", nullable: false),
+                    Driver = table.Column<string>(type: "text", nullable: false),
+                    StintNumber = table.Column<int>(type: "integer", nullable: false),
+                    Compound = table.Column<string>(type: "text", nullable: false),
+                    Team = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -53,13 +54,13 @@ namespace RaceEngineeringApi.Migrations
                 name: "Laps",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    StintId = table.Column<int>(type: "INTEGER", nullable: false),
-                    LapNumber = table.Column<int>(type: "INTEGER", nullable: false),
-                    LapTimeSeconds = table.Column<double>(type: "REAL", nullable: false),
-                    TyreLife = table.Column<int>(type: "INTEGER", nullable: false),
-                    PredictedLapTimeSeconds = table.Column<double>(type: "REAL", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    StintId = table.Column<int>(type: "integer", nullable: false),
+                    LapNumber = table.Column<int>(type: "integer", nullable: false),
+                    LapTimeSeconds = table.Column<double>(type: "double precision", nullable: false),
+                    TyreLife = table.Column<int>(type: "integer", nullable: false),
+                    PredictedLapTimeSeconds = table.Column<double>(type: "double precision", nullable: true)
                 },
                 constraints: table =>
                 {
