@@ -56,10 +56,19 @@ public static class SessionEndpoints
             if (string.IsNullOrWhiteSpace(source))
                 source = "unknown";
 
-            await using var stream = file.OpenReadStream();
-            var session = await importer.ImportAsync(stream, sessionName, source);
+            try
+            {
+                await using var stream = file.OpenReadStream();
+                var session = await importer.ImportAsync(stream, sessionName, source);
 
-            return Results.Created($"/api/sessions/{session.Id}", new { session.Id, session.Name });
+                return Results.Created($"/api/sessions/{session.Id}", new { session.Id, session.Name });
+            }
+            catch (DbUpdateException ex)
+            {
+                return Results.Problem(
+                    detail: ex.InnerException?.Message ?? ex.Message,
+                    statusCode: 500);
+            }
         })
         .DisableAntiforgery()
         .Accepts<IFormFile>("multipart/form-data");
