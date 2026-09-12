@@ -44,8 +44,6 @@ def build_dataframe(year: int, event: str, session_type: str) -> pd.DataFrame:
 
     laps = session.laps
 
-    # Drop laps with no recorded lap time (out-laps, red-flag laps, etc.) —
-    # they'd otherwise show up as garbage rows with a missing LapTimeSeconds.
     laps = laps[laps["LapTime"].notna()].copy()
 
     rows = pd.DataFrame({
@@ -55,9 +53,6 @@ def build_dataframe(year: int, event: str, session_type: str) -> pd.DataFrame:
         "LapNumber": laps["LapNumber"].astype(int),
         "LapTimeSeconds": laps["LapTime"].dt.total_seconds().round(3),
         "TyreLife": laps["TyreLife"].fillna(0).astype(int),
-        # FastF1 has no built-in lap-time prediction model — this column
-        # only gets populated for CSVs coming from the pit-stop-predictor
-        # project. Left blank here on purpose.
         "PredictedLapTimeSeconds": "",
         "Team": laps["Team"].fillna(""),
     })
@@ -99,8 +94,6 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # fastf1.Cache.enable_cache() requires the directory to already exist —
-    # create it first so a fresh checkout doesn't fail on the first run.
     os.makedirs(args.cache_dir, exist_ok=True)
     fastf1.Cache.enable_cache(args.cache_dir)
 

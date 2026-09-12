@@ -11,14 +11,12 @@ public static class SessionEndpoints
     {
         var group = app.MapGroup("/api/sessions").WithTags("Sessions");
 
-        // List all imported sessions, newest first.
         group.MapGet("/", async (AppDbContext db) =>
             await db.Sessions
                 .OrderByDescending(s => s.ImportedAt)
                 .Select(s => new { s.Id, s.Name, s.Source, s.ImportedAt })
                 .ToListAsync());
 
-        // Full detail for one session: all stints and their laps.
         group.MapGet("/{id:int}", async (int id, AppDbContext db) =>
         {
             var session = await db.Sessions
@@ -29,7 +27,6 @@ public static class SessionEndpoints
             return session is null ? Results.NotFound() : Results.Ok(session);
         });
 
-        // Just the stints for a session, useful for a lighter "overview" view.
         group.MapGet("/{id:int}/stints", async (int id, AppDbContext db) =>
             await db.Stints
                 .Where(st => st.SessionId == id)
@@ -44,7 +41,6 @@ public static class SessionEndpoints
                 })
                 .ToListAsync());
 
-        // Upload a CSV (from ac-lap-coach or the pit-stop-predictor) and store it.
        group.MapPost("/import", async (
             IFormFile file,
             [FromForm] string? sessionName,
